@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo Lists Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📝 Todo Lists Manager</h1>
+            <p class="subtitle">Управляйте своими задачами эффективно</p>
+        </header>
+
+        <main>
+            <!-- Создание нового списка -->
+            <section class="card create-section">
+                <h2>Создать новый список</h2>
+                <form id="createListForm">
+                    <div class="form-group">
+                        <label for="listName">Название списка:</label>
+                        <input type="text" id="listName" required placeholder="Мой список задач">
+                    </div>
+                    <input type="hidden" id="listSlug">
+                    <button type="submit" class="btn btn-primary">Создать список</button>
+                </form>
+            </section>
+
+            <!-- Поиск и отображение списка -->
+            <section class="card search-section">
+                <h2>Найти список по slug</h2>
+                <div class="search-bar">
+                    <input type="text" id="searchSlug" placeholder="Введите slug списка">
+                    <button id="searchBtn" class="btn btn-secondary">Поиск</button>
+                </div>
+            </section>
+
+            <!-- Отображение списка задач -->
+            <section id="todoListSection" class="card list-section hidden">
+                <div class="list-header">
+                    <div>
+                        <h2 id="listTitle"></h2>
+                        <p class="list-slug">Slug: <span id="listSlugDisplay"></span></p>
+                    </div>
+                    <div class="list-actions">
+                        <button id="manualRefreshBtn" class="btn btn-small btn-success">🔄 Обновить</button>
+                        <button id="editListBtn" class="btn btn-small btn-secondary">✏️ Редактировать</button>
+                        <button id="deleteListBtn" class="btn btn-small btn-danger">🗑️ Удалить список</button>
+                    </div>
+                </div>
+
+                <!-- Форма редактирования списка -->
+                <div id="editListForm" class="edit-form hidden">
+                    <h3>Редактировать список</h3>
+                    <div class="form-group">
+                        <label for="editListName">Название:</label>
+                        <input type="text" id="editListName">
+                    </div>
+                    <div class="form-buttons">
+                        <button id="saveListBtn" class="btn btn-primary">Сохранить</button>
+                        <button id="cancelEditListBtn" class="btn btn-secondary">Отмена</button>
+                    </div>
+                </div>
+
+                <!-- Добавление новой задачи -->
+                <div class="add-task-section">
+                    <h3>Добавить задачу</h3>
+                    <form id="addTaskForm">
+                        <div class="form-group">
+                            <input type="text" id="taskTitle" required placeholder="Название задачи">
+                        </div>
+                        <button type="submit" class="btn btn-primary">+ Добавить задачу</button>
+                    </form>
+                </div>
+
+                <!-- Список задач -->
+                <div class="tasks-container">
+                    <div class="tasks-header">
+                        <h3>Задачи</h3>
+                        <button id="toggleCompletedBtn" class="btn btn-small btn-secondary" style="display: none;">
+                            <span class="toggle-text">Показать</span> выполненные (<span id="completedCounter">0</span>)
+                        </button>
+                    </div>
+                    <div id="tasksList" class="tasks-list">
+                        <!-- Задачи будут добавлены динамически -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Todo Lists Manager API &copy; 2025</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
