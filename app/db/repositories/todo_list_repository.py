@@ -48,10 +48,12 @@ class TodoListRepository:
             result.tasks
         return result
     
-    def update(self, session: Session, todo_list: TodoListOrm, name: str = None) -> TodoListOrm:
+    def update(self, session: Session, todo_list: TodoListOrm, name: str = None, is_free: bool = None) -> TodoListOrm:
         """Update todo list."""
         if name is not None:
             todo_list.name = name
+        if is_free is not None:
+            todo_list.is_free = is_free
 
         return todo_list
     

@@ -34,7 +34,7 @@ class TodoService:
                 else:
                     raise Exception("Failed to create a unique slug for the todo list after multiple attempts.")
             else:
-                uow.todo_lists.take_up(uow.session, todo_list_orm)
+                uow.todo_lists.update(uow.session, todo_list_orm, name=todo_list_create.name, is_free=False)
             todo_list = TodoList.model_validate(todo_list_orm)
             uow.commit()
         return todo_list
