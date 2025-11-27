@@ -4,6 +4,8 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.openapi.docs import get_swagger_ui_html
+
 from app.core import settings
 from app.exceptions import TodoListNotFoundException, TodoTaskNotFoundException
 from app.router import router
@@ -13,7 +15,15 @@ app = FastAPI(
     description=settings.api_description,
     version=settings.app_version,
     debug=settings.debug_mode,
+    # openapi_url="openapi.json",
+    docs_url=None,
+    redoc_url=None,
 )
+
+
+
+
+
 
 # CORS middleware
 app.add_middleware(
@@ -50,6 +60,15 @@ app.include_router(router, prefix=settings.api_prefix)
 
 
 
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui():
+    return get_swagger_ui_html(
+        openapi_url="/api/" + "openapi.json",
+        title="My API Docs",
+        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+    )
 
     
     
