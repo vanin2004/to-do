@@ -29,10 +29,10 @@ from enum import Enum
 class MovePosition(str, Enum):
     """Позиция перемещения задачи в списке"""
     
-    BEFORE = Field("before", description="Поместить перед указанной задачей")
-    AFTER = Field("after", description="Поместить после указанной задачи")
-    FIRST = Field("first", description="Поместить в начало списка")
-    LAST = Field("last", description="Поместить в конец списка")
+    BEFORE = "before"
+    AFTER = "after"
+    FIRST = "first"
+    LAST= "last"
 
 class TodoTaskCreate(BaseModel):
     task: str = Field(default= "", description="Текст задачи")   

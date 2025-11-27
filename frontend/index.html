@@ -1,99 +1,601 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo Lists Manager</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Minimalist Todo</title>
+    <style>
+        :root {
+            --bg-color: #f9fafb;
+            --card-bg: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger: #ef4444;
+            --border: #e5e7eb;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding-top: 60px; /* Space for toolbar */
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            z-index: 100;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        }
+        .logo {
+            font-weight: bold;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logo:hover { color: var(--accent); }
+
+        .container {
+            width: 100%;
+            max-width: 640px;
+            margin-top: 2rem;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        h1, h2 { margin-top: 0; }
+        .hidden { display: none !important; }
+
+        /* Forms & Inputs */
+        .form-group { margin-bottom: 1.5rem; display: flex; gap: 0.75rem; }
+        input[type="text"] {
+            flex: 1;
+            padding: 0.875rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="text"]:focus { 
+            outline: none; 
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        button {
+            padding: 0.875rem 1.75rem;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+        button:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
+        button.secondary { background-color: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+        button.secondary:hover { background-color: var(--bg-color); color: var(--text-primary); transform: none; }
+
+        /* Task List Styling */
+        .task-list { list-style: none; padding: 0; margin: 0; }
+        .task-item {
+            display: flex;
+            align-items: flex-start; /* Align top for multi-line */
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid var(--border);
+            gap: 0.75rem;
+            transition: background 0.2s;
+            position: relative;
+        }
+        .task-item:last-child { border-bottom: none; }
+        .task-item:hover { background-color: #fcfcfc; }
+        
+        /* Dragging Styles */
+        .task-item[draggable="true"] { cursor: grab; }
+        .task-item.dragging { opacity: 0.4; background: var(--bg-color); }
+        .task-item.drag-over { border-top: 2px solid var(--accent); }
+
+        /* Checkbox */
+        .task-checkbox {
+            margin-top: 0.3rem; /* Align with text top */
+            width: 1.2rem; height: 1.2rem; 
+            cursor: pointer; accent-color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        /* Task Text */
+        .task-text { 
+            flex: 1; 
+            background: transparent; 
+            border: none; 
+            font-size: 1rem; 
+            color: var(--text-primary);
+            line-height: 1.5;
+            resize: none; /* If textarea used, but we use input for now */
+            width: 100%;
+            min-width: 0; /* Flexbox text overflow fix */
+            word-break: break-word; /* Wrap long words */
+        }
+        .task-text:focus { outline: none; }
+        
+        /* Delete Button */
+        .delete-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            color: var(--danger);
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.2s, transform 0.2s;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+        .task-item:hover .delete-btn { opacity: 1; } /* Show on hover */
+        .delete-btn:hover { transform: scale(1.1); background: transparent; }
+        .delete-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+        /* Completed Section */
+        .completed-section { margin-top: 2.5rem; padding-top: 1rem; }
+        .completed-section h3 { 
+            color: var(--text-secondary); 
+            font-size: 0.875rem; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em; 
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #9ca3af;
+        }
+
+        /* Header */
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .slug-display { 
+            font-size: 0.875rem; 
+            color: var(--text-secondary); 
+            background: var(--bg-color); 
+            padding: 0.25rem 0.75rem; 
+            border-radius: 20px; 
+            margin-left: 0.5rem;
+        }
+        
+        /* Error View */
+        .error-box {
+            background-color: #fef2f2; color: #991b1b;
+            padding: 1.5rem; border-radius: var(--radius); 
+            text-align: center; margin-bottom: 1.5rem;
+            border: 1px solid #fecaca;
+        }
+
+        .separator { 
+            display: flex; align-items: center; text-align: center; 
+            color: var(--text-secondary); font-size: 0.875rem; margin: 2rem 0; 
+        }
+        .separator::before, .separator::after {
+            content: ''; flex: 1; border-bottom: 1px solid var(--border);
+        }
+        .separator:not(:empty)::before { margin-right: .5em; }
+        .separator:not(:empty)::after { margin-left: .5em; }
+
+        @media (max-width: 480px) {
+            .container { padding: 0.5rem; margin-top: 1rem; }
+            .card { padding: 1.5rem; }
+            .delete-btn { opacity: 1; } /* Always show delete on mobile */
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📝 Todo Lists Manager</h1>
-            <p class="subtitle">Управляйте своими задачами эффективно</p>
-        </header>
 
-        <main>
-            <!-- Создание нового списка -->
-            <section class="card create-section">
-                <h2>Создать новый список</h2>
-                <form id="createListForm">
-                    <div class="form-group">
-                        <label for="listName">Название списка:</label>
-                        <input type="text" id="listName" required placeholder="Мой список задач">
-                    </div>
-                    <input type="hidden" id="listSlug">
-                    <button type="submit" class="btn btn-primary">Создать список</button>
-                </form>
-            </section>
+<!-- Toolbar -->
+<div class="toolbar">
+    <a href="/" class="logo" onclick="event.preventDefault(); window.history.pushState({}, '', '/'); renderApp();">
+        📝 Todo App
+    </a>
+</div>
 
-            <!-- Поиск и отображение списка -->
-            <section class="card search-section">
-                <h2>Найти список по slug</h2>
-                <div class="search-bar">
-                    <input type="text" id="searchSlug" placeholder="Введите slug списка">
-                    <button id="searchBtn" class="btn btn-secondary">Поиск</button>
-                </div>
-            </section>
+<div class="container">
+    
+    <!-- View: Home -->
+    <div id="view-home" class="view hidden card">
+        <h1 style="text-align: center; margin-bottom: 2rem;">Get Organized</h1>
+        
+        <div>
+            <div class="form-group">
+                <input type="text" id="create-name-input" placeholder="Enter new list name...">
+                <button id="create-btn">Create</button>
+            </div>
+        </div>
 
-            <!-- Отображение списка задач -->
-            <section id="todoListSection" class="card list-section hidden">
-                <div class="list-header">
-                    <div>
-                        <h2 id="listTitle"></h2>
-                        <p class="list-slug">Slug: <span id="listSlugDisplay"></span></p>
-                    </div>
-                    <div class="list-actions">
-                        <button id="manualRefreshBtn" class="btn btn-small btn-success">🔄 Обновить</button>
-                        <button id="editListBtn" class="btn btn-small btn-secondary">✏️ Редактировать</button>
-                        <button id="deleteListBtn" class="btn btn-small btn-danger">🗑️ Удалить список</button>
-                    </div>
-                </div>
+        <div class="separator">OR</div>
 
-                <!-- Форма редактирования списка -->
-                <div id="editListForm" class="edit-form hidden">
-                    <h3>Редактировать список</h3>
-                    <div class="form-group">
-                        <label for="editListName">Название:</label>
-                        <input type="text" id="editListName">
-                    </div>
-                    <div class="form-buttons">
-                        <button id="saveListBtn" class="btn btn-primary">Сохранить</button>
-                        <button id="cancelEditListBtn" class="btn btn-secondary">Отмена</button>
-                    </div>
-                </div>
-
-                <!-- Добавление новой задачи -->
-                <div class="add-task-section">
-                    <h3>Добавить задачу</h3>
-                    <form id="addTaskForm">
-                        <div class="form-group">
-                            <input type="text" id="taskTitle" required placeholder="Название задачи">
-                        </div>
-                        <button type="submit" class="btn btn-primary">+ Добавить задачу</button>
-                    </form>
-                </div>
-
-                <!-- Список задач -->
-                <div class="tasks-container">
-                    <div class="tasks-header">
-                        <h3>Задачи</h3>
-                        <button id="toggleCompletedBtn" class="btn btn-small btn-secondary" style="display: none;">
-                            <span class="toggle-text">Показать</span> выполненные (<span id="completedCounter">0</span>)
-                        </button>
-                    </div>
-                    <div id="tasksList" class="tasks-list">
-                        <!-- Задачи будут добавлены динамически -->
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <footer>
-            <p>Todo Lists Manager API &copy; 2025</p>
-        </footer>
+        <div style="text-align: center;">
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">Already have a list?</p>
+            <div class="form-group" style="max-width: 400px; margin: 0 auto;">
+                <input type="text" id="slug-input" placeholder="Enter code (slug)">
+                <button id="open-btn" class="secondary">Open</button>
+            </div>
+        </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- View: Error -->
+    <div id="view-error" class="view hidden card">
+        <div class="error-box">
+            <h2 style="margin-top:0">List Not Found</h2>
+            <p>We couldn't find a list with the code "<span id="error-slug" style="font-weight:bold;"></span>".</p>
+        </div>
+        <div style="display:flex; gap:1rem; justify-content: center;">
+            <button id="error-create-btn">Create this list</button>
+            <button id="error-home-btn" class="secondary">Go Home</button>
+        </div>
+    </div>
+
+    <!-- View: List -->
+    <div id="view-list" class="view hidden card">
+        <div class="header-row">
+            <div style="display:flex; align-items:baseline;">
+                <h1 id="list-title" style="margin:0;">My List</h1>
+                <span id="list-slug-display" class="slug-display"></span>
+            </div>
+            <button id="delete-list-btn" class="delete-btn" style="opacity:1; color:var(--text-secondary);" title="Delete List">
+                <!-- Trash Icon -->
+                <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            </button>
+        </div>
+
+        <!-- Add Task -->
+        <div class="form-group">
+            <input type="text" id="new-task-input" placeholder="Add a new task..." autocomplete="off">
+            <button id="add-task-btn" style="padding: 0 1.5rem; font-size: 1.5rem; line-height: 1;">+</button>
+        </div>
+
+        <!-- Active Tasks -->
+        <ul id="active-tasks" class="task-list"></ul>
+
+        <!-- Completed Tasks -->
+        <div class="completed-section">
+            <h3>Completed</h3>
+            <ul id="completed-tasks" class="task-list"></ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    const API_BASE = window.location.origin + '/api'; 
+    const POLL_INTERVAL = 3000;
+
+    // --- State ---
+    let currentSlug = null;
+    let tasks = [];
+    let pollTimer = null;
+    let isDragging = false; 
+
+    // --- Routing & Init ---
+    window.addEventListener('popstate', renderApp);
+    document.addEventListener('DOMContentLoaded', renderApp);
+
+    function renderApp() {
+        clearInterval(pollTimer);
+        const path = window.location.pathname.replace(/^\/|\/$/g, '');
+        
+        document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
+
+        if (!path) {
+            document.getElementById('view-home').classList.remove('hidden');
+            currentSlug = null;
+        } else {
+            currentSlug = path;
+            fetchList(currentSlug);
+        }
+    }
+
+    function navigateTo(slug) {
+        window.history.pushState({}, '', `/${slug}`);
+        renderApp();
+    }
+
+    // --- API ---
+    async function fetchList(slug) {
+        try {
+            const res = await fetch(`${API_BASE}/lists/${slug}`);
+            if (res.status === 404 || res.status === 422) {
+                showError(slug);
+                return;
+            }
+            const data = await res.json();
+            renderList(data);
+            startPolling();
+        } catch (e) {
+            console.error("Network error", e);
+        }
+    }
+
+    async function createList(name) {
+        try {
+            const res = await fetch(`${API_BASE}/lists/`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name: name })
+            });
+            const data = await res.json();
+            navigateTo(data.slug);
+        } catch (e) {
+            alert("Failed to create list");
+        }
+    }
+
+    async function deleteList() {
+        if(!confirm("Are you sure you want to delete this entire list?")) return;
+        await fetch(`${API_BASE}/lists/${currentSlug}`, { method: 'DELETE' });
+        navigateTo('');
+    }
+
+    async function addTask(text) {
+        await fetch(`${API_BASE}/lists/${currentSlug}/tasks`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ task: text, is_done: false })
+        });
+        fetchList(currentSlug);
+    }
+
+    async function updateTask(taskId, payload) {
+        await fetch(`${API_BASE}/lists/${currentSlug}/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+    }
+
+    async function deleteTask(taskId) {
+        if(!confirm("Delete this task?")) return;
+        await fetch(`${API_BASE}/lists/${currentSlug}/tasks/${taskId}`, { method: 'DELETE' });
+        fetchList(currentSlug);
+    }
+
+    function startPolling() {
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(() => {
+            if (!isDragging && currentSlug) {
+                fetch(`${API_BASE}/lists/${currentSlug}`)
+                    .then(res => {
+                        if(res.ok) return res.json();
+                        throw new Error('Poll failed');
+                    })
+                    .then(data => {
+                        if (!document.activeElement.classList.contains('task-text')) {
+                            renderList(data);
+                        }
+                    })
+                    .catch(() => {});
+            }
+        }, POLL_INTERVAL);
+    }
+
+    // --- Rendering ---
+    function showError(slug) {
+        document.getElementById('view-error').classList.remove('hidden');
+        document.getElementById('error-slug').textContent = slug;
+        document.getElementById('error-create-btn').onclick = () => createList(slug);
+        document.getElementById('error-home-btn').onclick = () => navigateTo('');
+    }
+
+    function renderList(data) {
+        document.getElementById('view-list').classList.remove('hidden');
+        document.getElementById('list-title').textContent = data.name;
+        document.getElementById('list-slug-display').textContent = data.slug;
+
+        tasks = data.tasks.sort((a, b) => a.weight - b.weight);
+
+        const activeUl = document.getElementById('active-tasks');
+        const completedUl = document.getElementById('completed-tasks');
+        
+        const focusedId = document.activeElement.getAttribute('data-id');
+        const focusedPos = document.activeElement.selectionStart;
+
+        activeUl.innerHTML = '';
+        completedUl.innerHTML = '';
+
+        tasks.forEach(task => {
+            const li = document.createElement('li');
+            li.className = `task-item ${task.is_done ? 'completed' : ''}`;
+            li.dataset.id = task.id;
+            li.dataset.weight = task.weight;
+            
+            if (!task.is_done) {
+                li.setAttribute('draggable', 'true');
+            }
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'task-checkbox';
+            checkbox.checked = task.is_done;
+            checkbox.onchange = () => handleStatusChange(task, checkbox.checked);
+
+            // We use a span with contenteditable? No, sticking to input for simplicity unless specific textarea requirement.
+            // To handle wrapping, we can use a simple div with contenteditable or a textarea. 
+            // Let's use a textarea that auto-expands or just a div.
+            // To keep things simple and robust: Input for single line is standard, but request asks for multi-line support.
+            // A div contenteditable is easiest for visual "text wrapping" without complex textarea js.
+            
+            const input = document.createElement('div');
+            input.contentEditable = true;
+            input.className = 'task-text';
+            input.innerText = task.task; // innerText handles newlines better for display
+            input.dataset.id = task.id;
+            
+            // Blur event to save
+            input.onblur = () => {
+                const newText = input.innerText.trim();
+                if(newText !== task.task) updateTask(task.id, { task: newText });
+            };
+            // Disable Enter creating divs, instead blur
+            input.onkeydown = (e) => {
+                if(e.key === 'Enter') { 
+                    e.preventDefault(); 
+                    input.blur(); 
+                }
+            };
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'delete-btn';
+            delBtn.title = "Delete task";
+            delBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+            delBtn.onclick = () => deleteTask(task.id);
+
+            li.append(checkbox, input, delBtn);
+
+            if (task.is_done) {
+                completedUl.appendChild(li);
+            } else {
+                activeUl.appendChild(li);
+            }
+        });
+
+        // Restore focus logic slightly different for contentEditable
+        if(focusedId) {
+            const el = document.querySelector(`.task-text[data-id="${focusedId}"]`);
+            if(el) {
+                el.focus();
+                // Cursor placement is tricky in contentEditable without ranges, mostly it goes to start. 
+                // For simple todo, focusing is acceptable.
+            }
+        }
+
+        setupDragAndDrop();
+    }
+
+    function handleStatusChange(task, isDone) {
+        updateTask(task.id, { is_done: isDone }).then(() => fetchList(currentSlug));
+    }
+
+    // --- Drag and Drop ---
+    let dragSrcEl = null;
+
+    function setupDragAndDrop() {
+        const listItems = document.querySelectorAll('#active-tasks .task-item');
+        listItems.forEach(item => {
+            item.addEventListener('dragstart', handleDragStart);
+            item.addEventListener('dragover', handleDragOver);
+            item.addEventListener('dragleave', handleDragLeave);
+            item.addEventListener('drop', handleDrop);
+            item.addEventListener('dragend', handleDragEnd);
+        });
+    }
+
+    function handleDragStart(e) {
+        isDragging = true;
+        dragSrcEl = this;
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+    }
+
+    function handleDragOver(e) {
+        if (e.preventDefault) e.preventDefault();
+        if (this.parentNode.id === 'active-tasks') {
+            this.classList.add('drag-over');
+            e.dataTransfer.dropEffect = 'move';
+        }
+        return false;
+    }
+
+    function handleDragLeave(e) {
+        this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+        if (e.stopPropagation) e.stopPropagation();
+        this.classList.remove('drag-over');
+
+        if (dragSrcEl !== this) {
+            const list = document.getElementById('active-tasks');
+            const movedId = dragSrcEl.dataset.id;
+            const targetId = this.dataset.id;
+            
+            const allItems = [...list.children];
+            const srcIndex = allItems.indexOf(dragSrcEl);
+            const targetIndex = allItems.indexOf(this);
+
+            if (srcIndex < targetIndex) {
+                this.after(dragSrcEl);
+                 performMove(movedId, targetId, 'after');
+            } else {
+                this.before(dragSrcEl);
+                performMove(movedId, targetId, 'before');
+            }
+        }
+        return false;
+    }
+
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        document.querySelectorAll('.task-item').forEach(item => item.classList.remove('drag-over'));
+        isDragging = false;
+    }
+
+    function performMove(movedTaskId, targetTaskId, position) {
+        const payload = { target_task: targetTaskId, move_position: position };
+        updateTask(movedTaskId, payload)
+            .then(() => fetch(`${API_BASE}/lists/${currentSlug}`))
+            .then(res => res.json())
+            .then(data => renderList(data));
+    }
+
+    // --- Listeners ---
+    document.getElementById('create-btn').addEventListener('click', () => {
+        const name = document.getElementById('create-name-input').value;
+        if(name) createList(name);
+    });
+
+    document.getElementById('open-btn').addEventListener('click', () => {
+        const slug = document.getElementById('slug-input').value;
+        if(slug) navigateTo(slug);
+    });
+
+    document.getElementById('add-task-btn').addEventListener('click', () => {
+        const input = document.getElementById('new-task-input');
+        if(input.value.trim()) {
+            addTask(input.value);
+            input.value = '';
+        }
+    });
+    
+    document.getElementById('new-task-input').addEventListener('keydown', (e) => {
+        if(e.key === 'Enter') document.getElementById('add-task-btn').click();
+    });
+
+    document.getElementById('delete-list-btn').addEventListener('click', deleteList);
+
+</script>
 </body>
 </html>
